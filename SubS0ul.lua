@@ -1,4 +1,4 @@
-local rotationName = "SubS0ul - 9.0 TEST"
+local rotationName = "|cffff6060 SubS0ul - 9.x"
 local opener = true
 local resetButton
 local dotBlacklist = "135824|139057|129359|129448|134503|137458|139185|120651"
@@ -8,10 +8,9 @@ local stunSpellList = "274400|274383|257756|276292|268273|256897|272542|272888|2
 ---------------
 local function createToggles() -- Define custom toggles
     RotationModes = {
-        [1] = { mode = "Auto", value = 1 , overlay = "Automatic Rotation", tip = "Swaps between Single and Multiple based on number of enemies in range.", highlight = 1, icon = br.player.spell.nightblade },
-        [2] = { mode = "Mult", value = 2 , overlay = "Multiple Target Rotation", tip = "Multiple target rotation used.", highlight = 0, icon = br.player.spell.shurikenStorm },
-        [3] = { mode = "Sing", value = 3 , overlay = "Single Target Rotation", tip = "Single target rotation used.", highlight = 0, icon = br.player.spell.shadowstrike },
-        [4] = { mode = "Off", value = 4 , overlay = "DPS Rotation Disabled", tip = "Disable DPS Rotation", highlight = 0, icon = br.player.spell.stealth}
+        [1] = { mode = "Auto", value = 1 , overlay = "Automatic Rotation", tip = "Swaps between Single and Multiple based on number of enemies in range.", highlight = 1, icon = br.player.spell.rupture },
+        [2] = { mode = "Sing", value = 2 , overlay = "Single Target Rotation", tip = "Single target rotation used.", highlight = 0, icon = br.player.spell.shadowstrike },
+        [3] = { mode = "Off", value = 3 , overlay = "DPS Rotation Disabled", tip = "Disable DPS Rotation", highlight = 0, icon = br.player.spell.stealth}
     };
     CreateButton("Rotation",1,0)
     CooldownModes = {
@@ -119,10 +118,10 @@ local function createOptions()
         --- TOGGLE OPTIONS --- -- Degine Toggle Options
         ----------------------
         section = br.ui:createSection(br.ui.window.profile,  "Toggle Keys")
-            br.ui:createDropdown(section,  "Rotation Mode", br.dropOptions.Toggle,  4)
-            br.ui:createDropdown(section,  "Cooldown Mode", br.dropOptions.Toggle,  3)
-            br.ui:createDropdown(section,  "Defensive Mode", br.dropOptions.Toggle,  6)
-            br.ui:createDropdown(section,  "Pause Mode", br.dropOptions.Toggle,  6)
+            br.ui:createDropdownWithout(section,  "Rotation Mode", br.dropOptions.Toggle,  4)
+            br.ui:createDropdownWithout(section,  "Cooldown Mode", br.dropOptions.Toggle,  3)
+            br.ui:createDropdownWithout(section,  "Defensive Mode", br.dropOptions.Toggle,  6)
+            br.ui:createDropdownWithout(section,  "Pause Mode", br.dropOptions.Toggle,  6)
         br.ui:checkSectionState(section)
         ----------------------
         -------- LISTS -------
@@ -175,8 +174,8 @@ local function runRotation()
     local talent                                        = br.player.talent
     local trait                                         = br.player.traits
     local essence                                       = br.player.essence
-    local runeforge                                     = br.player.runeforge
-    local conduit                                       = br.player.conduit
+    -- local runeforge                                     = br.player.runeforge
+    -- local conduit                                       = br.player.conduit
     local cast                                          = br.player.cast
     local php                                           = br.player.health
     local power, powmax, powgen                         = br.player.power, br.player.powerMax, br.player.powerRegen
@@ -300,14 +299,12 @@ local function runRotation()
     local enemyTable10 = { }
     local enemyTable5 = { }
     local deadlyPoison10 = true
-    local fightRemain = 0
     if #enemies.yards30 > 0 then
         local highestHP
         local lowestHP
         for i = 1, #enemies.yards30 do
             local thisUnit = enemies.yards30[i]
-            if (not noDotCheck(thisUnit) or GetUnitIsUnit(thisUnit, "target")) and not UnitIsDeadOrGhost(thisUnit) 
-             and (mode.rotation ~= 3 or (mode.rotation == 3 and GetUnitIsUnit(thisUnit, "target"))) then
+            if (not noDotCheck(thisUnit) or GetUnitIsUnit(thisUnit, "target")) and not UnitIsDeadOrGhost(thisUnit) and (mode.rotation ~= 2 or (mode.rotation == 2 and GetUnitIsUnit(thisUnit, "target"))) then
                 local enemyUnit = {}
                 enemyUnit.unit = thisUnit
                 enemyUnit.ttd = ttd(thisUnit)
@@ -317,7 +314,6 @@ local function runRotation()
                 tinsert(enemyTable30, enemyUnit)
                 if highestHP == nil or highestHP < enemyUnit.hpabs then highestHP = enemyUnit.hpabs end
                 if lowestHP == nil or lowestHP > enemyUnit.hpabs then lowestHP = enemyUnit.hpabs end
-                if fightRemain == nil or fightRemain < enemyUnit.ttd then fightRemain = enemyUnit.ttd end
                 if enemyTable30.lowestTTDUnit == nil or enemyTable30.lowestTTD > enemyUnit.ttd then
                     enemyTable30.lowestTTDUnit = enemyUnit.unit
                     enemyTable30.lowestTTD = enemyUnit.ttd
@@ -326,19 +322,20 @@ local function runRotation()
         end
         if #enemyTable30 > 1 then
             for i = 1, #enemyTable30 do
-                local hpNorm = (5-1)/(highestHP-lowestHP)*(enemyTable30[i].hpabs-highestHP)+5 -- normalization of HP value, high is good
+                local thisUnit = enemyTable30[i]
+                local hpNorm = (10-1)/(highestHP-lowestHP)*(thisUnit.hpabs-highestHP)+10 -- normalization of HP value, high is good
                 if hpNorm ~= hpNorm or tostring(hpNorm) == tostring(0/0) then hpNorm = 0 end -- NaN check
                 local enemyScore = hpNorm
-                if enemyTable30[i].facing then enemyScore = enemyScore + 30 end
-                if enemyTable30[i].ttd > 1.5 then enemyScore = enemyScore + 10 end
-                if enemyTable30[i].distance <= 5 then enemyScore = enemyScore + 30 end
-                local raidTarget = GetRaidTargetIndex(enemyTable30[i].unit)
-                if raidTarget ~= nil then 
+                if thisUnit.ttd > 1.5 then enemyScore = enemyScore + 10 end
+                if thisUnit.facing then enemyScore = enemyScore + 30 end
+                if thisUnit.distance <= 5 then enemyScore = enemyScore + 30 end
+                if GetUnitIsUnit(thisUnit.unit, "target") then enemyScore = enemyScore + 100 end
+                local raidTarget = GetRaidTargetIndex(thisUnit.unit)
+                if raidTarget ~= nil then
                     enemyScore = enemyScore + raidTarget * 3
                     if raidTarget == 8 then enemyScore = enemyScore + 5 end
                 end
-                if UnitBuffID(enemyTable30[i].unit, 277242) then enemyScore = enemyScore + 50 end
-                enemyTable30[i].enemyScore = enemyScore
+                thisUnit.enemyScore = enemyScore
             end
             table.sort(enemyTable30, function(x,y)
                 return x.enemyScore > y.enemyScore
@@ -346,22 +343,28 @@ local function runRotation()
         end
         for i = 1, #enemyTable30 do
             local thisUnit = enemyTable30[i]
+            local sStormIgnore = {
+                [120651]=true, -- Explosive
+            }
+
             if thisUnit.distance <= 10 then
-                tinsert(enemyTable10, thisUnit)
+                if sStormIgnore[thisUnit.objectID] == nil and not isTotem(thisUnit.unit) then
+                    tinsert(enemyTable10, thisUnit)
+                end
                 if thisUnit.distance <= 5 then
                     tinsert(enemyTable5, thisUnit)
                 end
             end
         end
-        if #enemyTable5 > 1 then
-            table.sort(enemyTable5, function(x)
-                if GetUnitIsUnit(x.unit, "target") then
-                    return true
-                else
-                    return false
-                end
-            end)
-        end
+        -- if #enemyTable5 > 1 then
+        --     table.sort(enemyTable5, function(x)
+        --         if GetUnitIsUnit(x.unit, "target") then
+        --             return true
+        --         else
+        --             return false
+        --         end
+        --     end)
+        -- end
         if isChecked("Auto Target") and inCombat and #enemyTable30 > 0 and ((GetUnitExists("target") and UnitIsDeadOrGhost("target") and not GetUnitIsUnit(enemyTable30[1].unit, "target")) or not GetUnitExists("target")) then
             TargetUnit(enemyTable30[1].unit)
         end
@@ -370,7 +373,7 @@ local function runRotation()
     if enemyTable30.lowestTTD == nil then enemyTable30.lowestTTD = 999 end
 
     --Variables
-    local dSEnabled, stEnabled, subterfugeActive, sRogue, darkShadowEnabled, nsEnabled, tfdActive, vEnabled, mosEnabled, sfEnabled, aEnabled, cTime
+    local dSEnabled, stEnabled, subterfugeActive, sRogue, darkShadowEnabled, nsEnabled, tfdActive, vEnabled, mosEnabled, sfEnabled, aEnabled, sndCondition
     if talent.deeperStratagem then dSEnabled = 1 else dSEnabled = 0 end
     if talent.darkShadow then darkShadowEnabled = 1 else darkShadowEnabled = 0 end
     if talent.nightstalker then nsEnabled = 1 else nsEnabled = 0 end
@@ -382,11 +385,8 @@ local function runRotation()
     if talent.subterfuge then subterfugeActive = 1 else subterfugeActive = 0 end
     if talent.gloomblade then gloombladeActive = 1 else gloombladeActive = 0 end
     if trait.theFirstDance.active then tfdActive = 1 else tfdActive = 0 end
-    if triat.bladeInTheShadows.active then bitsActive = 1 else bitsActive = 0 end
+    if trait.bladeInTheShadows.active then bitsActive = 1 else bitsActive = 0 end
     if stealthedAll == true then sRogue = 1 else sRogue = 0 end
-    if buff.seethingRage.exists() then BotEBuffActive = 1 else BotEBuffActive = 0 end
-    if buff.shurikenTornado.exists() then TornadoActive = 1 else TornadoActive = 0 end
-    if combatTime < 10 then cTime = 1 else cTime = 0 end
     local enemies10 = #enemyTable10
     local ruptureRemain = debuff.rupture.remain("target")
     local ssThd = 0
@@ -394,8 +394,7 @@ local function runRotation()
 
     -- # Used to determine whether cooldowns wait for SnD based on targets.
     -- variable,name=snd_condition,value=buff.slice_and_dice.up|spell_targets.shuriken_storm>=6
-    local sndCondition = 0
-    if buff.sliceAndDice.exists() or enemies10 >= 6 then sndCondition = 1 esle sndCondition = 0 end
+    if buff.sliceAndDice.exists() or enemies10 >= 6 then sndCondition = 1 else sndCondition = 0 end
     -- # Only change rotation if we have priority_rotation set and multiple targets up.
     -- actions+=/variable,name=use_priority_rotation,value=priority_rotation&spell_targets.shuriken_storm>=2
     local priorityRotation = false
@@ -574,13 +573,17 @@ local function runRotation()
                 return true
             end
         end
+        -- actions.precombat+=/marked_for_death,precombat_seconds=15
+        if isChecked("Precombat") and pullTimer < 15 and stealth and comboDeficit > 2 and talent.markedForDeath and targetDistance < 25 then --and validTarget
+            if cast.markedForDeath("target") then return true end
+        end
         -- actions.precombat+=/Slice and Dice, if=precombat_seconds=1
-        if isChecked("Precombat") and pullTimer <= 1 and combo > 0 then
-            if cast.sliceAndDice("player") then return true end
+        if isChecked("Precombat") and (pullTimer <= 1 or targetDistance < 10) and combo > 0 then
+            if cast.sliceAndDice() then return true end
         end
         -- actions.precombat+=/shadowBlades, if=runeforge.mark_of_the_master_assassin.equipped
-        if isChecked("Precombat") and cdUsage and runeforge.markOfTheMasterAssassin.active() and validTarget and targetDistance < 5 then
-            cast.shadowBlades.("player") then return true end
+        if isChecked("Precombat") and cdUsage and targetDistance < 5 then -- and runeforge.markOfTheMasterAssassin.active() and validTarget
+            if cast.shadowBlades("player") then return true end
         end
     end
 
@@ -592,13 +595,13 @@ local function runRotation()
         end
         -- # (Unless already up because we took Shadow Focus) use Symbols off-gcd before the first Shuriken Storm from Tornado comes in.
         -- actions.cds+=/symbols_of_death,use_off_gcd=1,if=buff.shuriken_tornado.up&buff.shuriken_tornado.remains<=3.5
-        if mode.sod == 1 and buff.shurikenTornado.exists() and buff.shurikenTornado.remain() <= 3.5 then
+        if mode.sod == 1 and (buff.shurikenTornado.exists() and buff.shurikenTornado.remain() <= 3.5 or not talent.shurikenTornado) then
             if cast.symbolsOfDeath("player") then return true end
         end
     end
 
     local function actionList_Cooldowns()
-----------------------------        
+---------------------------- SHADOWLANDS
         -- actions.cds+=/flagellation,if=variable.snd_condition&!stealthed.mantle"
         -- if sndCondition and not buff.masterAssassinsInitiative.exists() then
         --     if cast.flagellation("target") then return true end
@@ -611,11 +614,11 @@ local function runRotation()
         -- if (runeforge.markOfTheMasterAssassin.active and comboDeficit <= 3 or runeforge.deathlyShadows.active and combo < 1) and buff.symbolsOfDeath.exists() and buff.shadowDance.exists() and not buff.masterAssassin.exists() and not buff.deathlyShadows.exists() then
         --     if cast.vanish("player") then return true end
         -- end
-----------------------------  
+---------------------------- SHADOWLANDS
         -- actions.cds+=/call_action_list,name=essences,if=!stealthed.all&variable.snd_condition|essence.breath_of_the_dying.major&time>=2
         if isChecked("Essences") and not IsMounted() and not stealthedAll and sndCondition or cast.able.reapingFlames() and combatTime >= 2 then
             -- actions.essences+=/blood_of_the_enemy,if=!cooldown.shadow_blades.up&cooldown.symbols_of_death.up|fight_remains<=10
-            if cast.able.bloodOfTheEnemy() and cd.shadowBlades.exists() and not cd.symbolsOfDeath.exists() and fightRemain <= 0 then
+            if cast.able.bloodOfTheEnemy() and cd.shadowBlades.exists() and not cd.symbolsOfDeath.exists() and ttd("target") <= 10 then
                 if cast.bloodOfTheEnemy("player") then return true end
             end
             -- actions.essences+=/guardian_of_azeroth
@@ -631,7 +634,7 @@ local function runRotation()
                 if cast.rippleInSpace() then return true end
             end
             -- actions.essences+=/worldvein_resonance,if=cooldown.symbols_of_death.remains<5|fight_remains<18
-            if cast.able.worldveinResonance() and cd.symbolsOfDeath.remain < 5 or fightRemain < 18 then
+            if cast.able.worldveinResonance() and cd.symbolsOfDeath.remain < 5 or ttd("target") <= 18 then
                 if cast.worldveinResonance("player") then return true end
             end
             -- actions.essences+=/memory_of_lucid_dreams,if=energy<40&buff.symbols_of_death.up
@@ -699,13 +702,13 @@ local function runRotation()
             if cast.shurikenTornado("player") then return true end
         end
         -- actions.cds+=/serrated_bone_spike,cycle_targets=1,if=variable.snd_condition&!dot.serrated_bone_spike_dot.ticking|fight_remains<=5
-        -- if sndCondition and not debuff.serratedBoneSpike.exists(enemyTable30.lowestTTDUnit) or fightRemain <= 5 then
+        -- if sndCondition and not debuff.serratedBoneSpike.exists(enemyTable30.lowestTTDUnit) or ttd("target") <= 5 then
         --     if cast.serratedBoneSpike(enemyTable30.lowestTTDUnit) then return true end
         -- end
         -- # Use Symbols on cooldown (after first SnD) unless we are going to pop Tornado and do not have Shadow Focus. Low CP for The Rotten.
         -- actions.cds+=/symbols_of_death,if=variable.snd_condition&!cooldown.shadow_blades.up&(talent.enveloping_shadows.enabled|cooldown.shadow_dance.charges>=1)&(!talent.shuriken_tornado.enabled|talent.shadow_focus.enabled|cooldown.shuriken_tornado.remains>2)&(!runeforge.the_rotten.equipped|combo_points<=2)&(!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>2)
         if mode.sod == 1 and sndCondition and cd.shadowBlades.exists() and (talent.envelopingShadows or charges.shadowDance.frac() >= 1) and 
-         (not talent.shurikenTornado or talent.shadowFocus or cd.shurikenTornado.remain() > 2) and (not runeforge.theRotten.active or combo <= 2) and 
+         (not talent.shurikenTornado or talent.shadowFocus or cd.shurikenTornado.remain() > 2) and --and (not runeforge.theRotten.active or combo <= 2)
          (not essence.bloodOfTheEnemy.active or cd.bloodOfTheEnemy.remain() > 2) and ttd("target") > getOptionValue("CDs TTD Limit") then
             if cast.symbolsOfDeath("player") then return true end
         end
@@ -729,30 +732,35 @@ local function runRotation()
         if cdUsage and sndCondition and not stealthedAll and comboDeficit >= 2 and isChecked("Shadow Blades") and ttd("target") > getOptionValue("CDs TTD Limit") then
             if cast.shadowBlades("player") then return true end
         end
+---------------------------- SHADOWLANDS
         -- actions.cds+=/echoing_reprimand,if=variable.snd_condition&combo_points.deficit>=3&spell_targets.shuriken_storm<=4
         -- if sndCondition and comboDeficit >= 3 and enemies10 <= 4 then
         --     if cast.echoingReprimand("target") then return true end
         -- end
-        -- # With SF, if not already done, use Tornado with SoD up.
-        -- actions.cds+=/shuriken_tornado,if=talent.shadow_focus.enabled&variable.snd_condition&buff.symbols_of_death.up
-        if talent.shadowFocus and sndCondition and buff.symbolsOfDeath.exists("target") then
-            if cast.shurikenTornado("player") then return true end
-        end
-        -- actions.cds+=/shadow_dance,if=!buff.shadow_dance.up&fight_remains<=8+talent.subterfuge.enabled
-        if mode.sd == 1 and cdUsage and not buff.shadowDance.exists() and fightRemain <= (8 + subterfugeActive) and ttd("target") > getOptionValue("CDs TTD Limit") then
-            if cast.shadowDance("player") then return true end
-        end
-        -- actions.cds+=/shiv,if=level>=58&dot.rupture.ticking&(!equipped.azsharas_font_of_power|cooldown.vendetta.remains>10)
-        if debuff.rupture.exists("target") and (buff.symbolsOfDeath.remain() > 8 or buff.shadowBlades.remain() > 9) and (ttd("target") > 9 or isBoss()) then
+        -- -- # With SF, if not already done, use Tornado with SoD up.
+        -- -- actions.cds+=/shuriken_tornado,if=talent.shadow_focus.enabled&variable.snd_condition&buff.symbols_of_death.up
+        -- if talent.shadowFocus and sndCondition and buff.symbolsOfDeath.exists("target") then
+        --     if cast.shurikenTornado("player") then return true end
+        -- end
+        -- -- actions.cds+=/shadow_dance,if=!buff.shadow_dance.up&fight_remains<=8+talent.subterfuge.enabled
+        -- if mode.sd == 1 and cdUsage and not buff.shadowDance.exists() and ttd("target") <= (8 + subterfugeActive) and ttd("target") > getOptionValue("CDs TTD Limit") then
+        --     if cast.shadowDance("player") then return true end
+        -- end
+        -- -- actions.cds+=/shiv,if=level>=58&dot.rupture.ticking&(!equipped.azsharas_font_of_power|cooldown.vendetta.remains>10) --not buff.masterAssassin.exists() and
+        if (debuff.rupture.exists("target") or not shallWeDot("target")) and (buff.symbolsOfDeath.remain() > 8 or buff.shadowBlades.remain() > 9) and (ttd("target") > 3 or isBoss()) then
             if cast.shiv("target") then return true end
         end
         -- actions.cds+=/potion,if=buff.bloodlust.react|buff.symbols_of_death.up&(buff.shadow_blades.up|cooldown.shadow_blades.remains<=10)
-        if cdUsage and ttd("target") > 15 and isChecked("Potion") and (hasBloodLust() or (buff.symbolsOfDeath.exists("target") and (buff.shadowBlades.exists() or cd.shadowBlades.remain() <= 10))) and ttd("target") > getOptionValue("CDs TTD Limit") then
-            if getOptionValue("Potion") == 1 and ttd("target") > 15 and use.able.battlePotionOfAgility() and not buff.battlePotionOfAgility.exists() then
-                use.battlePotionOfAgility()
+---------------------------- SHADOWLANDS
+        if cdUsage and ttd("target") > getOptionValue("CDs TTD Limit") and isChecked("Potion") and (hasBloodLust() or (buff.symbolsOfDeath.exists("target") and (buff.shadowBlades.exists() or cd.shadowBlades.remain() <= 10))) then
+            if getOptionValue("Potion") == 1 and use.able.superiorBattlePotionOfAgility() and not buff.superiorBattlePotionOfAgility.exists() then
+                use.superiorBattlePotionOfAgility()
                 return true
-            elseif getOptionValue("Potion") == 2 and ttd("target") > getOptionValue("CDs TTD Limit") and use.able.potionOfBurstingBlood() and not buff.potionOfBurstingBlood.exists() then
-                use.potionOfBurstingBlood()
+            elseif getOptionValue("Potion") == 2 and use.able.potionOfUnbridledFury() and not buff.potionOfUnbridledFury.exists() then
+                use.potionOfUnbridledFury()
+                return true
+            elseif getOptionValue("Potion") == 3 and use.able.potionOfFocusedResolve() and not buff.potionOfFocusedResolve.exists() then
+                use.potionOfFocusedResolve() 
                 return true
             end
         end
@@ -766,17 +774,20 @@ local function runRotation()
             end
         end
         -- # Specific trinktes 
-        if isChecked("Trinkets") and not stealthedRogue then
-        --Very roughly rule of thumbified maths below: Use for Inkpod crit, otherwise with SoD at 25+ stacks or 15+ with also Blood up.
+        -- Very roughly rule of thumbified maths below: Use for Inkpod crit, otherwise with SoD at 25+ stacks or 15+ with also Blood up.
         -- actions.cds+=/use_item,name=ashvanes_razor_coral,if=debuff.razor_coral_debuff.down|debuff.conductive_ink_debuff.up&target.health.pct<32&target.health.pct>=30|!debuff.conductive_ink_debuff.up&(debuff.razor_coral_debuff.stack>=25-10*debuff.blood_of_the_enemy.up|fight_remains<40)&buff.symbols_of_death.remains>8
-            if hasEquiped(169311, 13) and canUseItem(13) and not debuff.razorCoral.exists("target") or (debuff.conductiveInk.exists("target") and thp < 32 and thp >= 30) or (not debuff.conductiveInk.exists("target") and (debuff.razorCoral.stack() >= 25 - 10 * BotEBuffActive or fightRemain < 40)) and buff.symbolsOfDeath.remain() > 8 or (isBoss() and ttd("target") < 20) then
+        local BotEBuffActive = 0
+        if buff.seethingRage.exists() then BotEBuffActive = 1 else BotEBuffActive = 0 end
+        if isChecked("Trinkets") and not stealthedRogue and not debuff.razorCoral.exists("target") or (debuff.conductiveInk.exists("target") and thp < 32 and thp >= 30) or not debuff.conductiveInk.exists("target") and (debuff.razorCoral.stack() >= 25 - 10 * BotEBuffActive or ttd("target") < 40) and buff.symbolsOfDeath.remain() > 8 or (isBoss() and ttd("target") < 20) then
+            if hasEquiped(169311, 13) and canUseItem(13) then
                 useItem(13)
-            elseif hasEquiped(169311, 14) and canUseItem(14) and not debuff.razorCoral.exists("target") or (debuff.conductiveInk.exists("target") and thp < 32 and thp >= 30) or (not debuff.conductiveInk.exists("target") and (debuff.razorCoral.stack() >= 25 - 10 * BotEBuffActive or fightRemain < 40)) and buff.symbolsOfDeath.remain() > 8 or (isBoss() and ttd("target") < 20) then
+            end
+            if hasEquiped(169311, 14) and canUseItem(14) then
                 useItem(14)
             end
         end
         -- actions.cds+=/use_items,if=buff.symbols_of_death.up|fight_remains<20
-        if cdUsage and isChecked("Trinkets") and (buff.symbolsOfDeath.exists("target") or not isChecked("Symbols of Death")) and ttd("target") > getOptionValue("CDs TTD Limit") or fightRemain < 20 then
+        if cdUsage and isChecked("Trinkets") and (buff.symbolsOfDeath.exists("target") or not isChecked("Symbols of Death")) and ttd("target") > getOptionValue("CDs TTD Limit") or ttd("target") < 20 then
             if canUseItem(13) and not (hasEquiped(169311, 13) or hasEquiped(169314, 13) or hasEquiped(159614, 13)) then
                 useItem(13)
             end
@@ -788,26 +799,21 @@ local function runRotation()
 
     local function actionList_Finishers()
         -- actions.finish=slice_and_dice,if=spell_targets.shuriken_storm<6&!buff.shadow_dance.up&buff.slice_and_dice.remains<fight_remains&buff.slice_and_dice.remains<(1+combo_points)*1.8
-        if enemies10 < 6 and not buff.shadowDance.exists() and buff.sliceAndDice.remain() < fightRemain and buff.sliceAndDice.remain < (1+ combo)*1.8 then
-            cast.sliceAndDice("player") then return true end
+        if enemies10 < 6 and not buff.shadowDance.exists() and buff.sliceAndDice.remain() < ttd("target") and buff.sliceAndDice.remain() < (1 + combo)*1.8 then
+            if cast.sliceAndDice() then return true end
         end
         -- # Helper Variable for Rupture. Skip during Master Assassin or during Dance with Dark and no Nightstalker.
         -- actions.finish+=/variable,name=skip_rupture,value=master_assassin_remains>0|!talent.nightstalker.enabled&talent.dark_shadow.enabled&buff.shadow_dance.up|spell_targets.shuriken_storm>=6
-        local skipRupture = 0
-        if buff.masterAssassin.exists() or (not talent.nightstalker and talent.darkShadow and buff.shadowDance.exists()) or enemies10 >= 6 then skipRupture = 1 else skipRupture = 0 end
+        local skipRupture = ((not talent.nightstalker and talent.darkShadow and buff.shadowDance.exists()) or enemies10 >= 6)  or false -- buff.masterAssassin.exists() or 
         -- # Keep up Rupture if it is about to run out.
         -- actions.finish+=/rupture,if=!variable.skip_rupture&target.time_to_die-remains>6&refreshable
-        if not skipRupture and ttd("target") > 6 and debuff.rupture.refresh("target") then
+        --print("skipRupture: " .. skipRupture .. " TTD: " .. ttd("target") .. " rupRefresh: " .. (debuff.rupture.refresh("target") and 'true' or 'false') .. " shallWeDot: " .. (shallWeDot("target")and 'true' or 'false'))
+        if not skipRupture and ttd("target") > 6 and debuff.rupture.refresh("target") and shallWeDot("target") then
             if cast.rupture("target") then return true end
         end
         -- actions.finish+=/secret_technique
-        if cast.able.secretTechnique() then
+        if talent.secretTechnique then
             if cast.secretTechnique("target") then return true end
-        end
-        -- # Keep up Nightblade if it is about to run out. Do not use NB during Dance, if talented into Dark Shadow.
-        -- actions.finish+=/nightblade,if=(!talent.dark_shadow.enabled|!buff.shadow_dance.up)&target.time_to_die-remains>6&remains<tick_time*2
-        if (not talent.darkShadow or not buff.shadowDance.exists()) and (ttd("target") - nbRemain) > 6 and nbRemain < 4 and shallWeDot("target") then
-            if cast.nightblade("target") then return true end
         end
         -- # Multidotting targets that will live for the duration of Rupture, refresh during pandemic.
         -- actions.finish+=/rupture,cycle_targets=1,if=!variable.skip_rupture&!variable.use_priority_rotation&spell_targets.shuriken_storm>=2&target.time_to_die>=(5+(2*combo_points))&refreshable
@@ -815,7 +821,6 @@ local function runRotation()
         if not skipRupture and not priorityRotation and enemies10 >= 2 and getSpellCD(spell.rupture) == 0 and ruptureCount <= getOptionValue("Multidot Limit") then
             for i = 1, #enemyTable5 do
                 local thisUnit = enemyTable5[i].unit
-                local ruptureRemain = debuff.rupture.remain(thisUnit)
                 if ttd(thisUnit) >= (5 + 2 * combo) and debuff.rupture.refresh(thisUnit) and shallWeDot(thisUnit) then
                     if cast.rupture(thisUnit) then return true end
                 end
@@ -823,35 +828,29 @@ local function runRotation()
         end
         -- # Refresh Rupture early if it will expire during Symbols. Do that refresh if SoD gets ready in the next 5s.
         -- actions.finish+=/rupture,if=!variable.skip_rupture&remains<cooldown.symbols_of_death.remains+10&cooldown.symbols_of_death.remains<=5&target.time_to_die-remains>cooldown.symbols_of_death.remains+5
-        if not skipRupture and ruptureRemain < cd.symbolsOfDeath.remain() + 10 and cd.symbolsOfDeath.remain() <= 5 and ttd("target") - ruptureRemain > cd.symbolsOfDeath.remain()+5 then
+        if not skipRupture and ruptureRemain < cd.symbolsOfDeath.remain() + 10 and cd.symbolsOfDeath.remain() <= 5 and shallWeDot("target") and ttd("target") - ruptureRemain > cd.symbolsOfDeath.remain()+5 then
             if cast.rupture(thisUnit) then return true end
         end
         -- actions.finish+=/eviscerate
-        if cast.able.eviscerate() then
-            if cast.eviscerate("target") then return true end
-        end
-        -- Sinister Strike
-        if level < 40 then
-            if cast.sinisterStrike("target") then return true end
-        end
+        if cast.eviscerate("target") then return true end
     end
 
     local function actionList_StealthCD()
         -- # Helper Variable
         -- actions.stealth_cds=variable,name=shd_threshold,value=cooldown.shadow_dance.charges_fractional>=1.75
         local shdThreshold = false
-        if charges.shadowDance.frac() >= 1.75 then
-            shdThreshold = true
-        end
+        if charges.shadowDance.frac() >= 1.75 then shdThreshold = true else shdThreshold = false end
         -- # Vanish if we are capping on Dance charges. Early before first dance if we have no Nightstalker but Dark Shadow in order to get Rupture up (no Master Assassin).
         -- actions.stealth_cds+=/vanish,if=(!variable.shd_threshold|!talent.nightstalker.enabled&talent.dark_shadow.enabled)&combo_points.deficit>1&!runeforge.mark_of_the_master_assassin.equipped
-        if cdUsage and (not shdThreshold or not talent.nightstalker and talent.darkShadow) and comboDeficit > 1 and not runeforge.markOfTheMasterAssassin.active and targetDistance < 5 and isChecked("Vanish") and ttd("target") > getOptionValue("CDs TTD Limit") then
+        if cdUsage and (not shdThreshold or not talent.nightstalker and talent.darkShadow) and comboDeficit > 1 and targetDistance < 5 and isChecked("Vanish") and ttd("target") > getOptionValue("CDs TTD Limit") then -- and not runeforge.markOfTheMasterAssassin.active
             if cast.vanish("player") then return true end
         end
+---------------------------- SHADOWLANDS
         -- actions.stealth_cds+=/sepsis
         -- if cast.able.sepsis() then
         --     if cast.sepsis("target") then return true end
         -- end
+---------------------------- SHADOWLANDS
         -- # Pool for Shadowmeld + Shadowstrike unless we are about to cap on Dance charges. Only when Find Weakness is about to run out.
         -- actions.stealth_cds+=/pool_resource,for_next=1,extra_amount=40
         -- actions.stealth_cds+=/shadowmeld,if=energy>=40&energy.deficit>=10&!variable.shd_threshold&combo_points.deficit>1&debuff.find_weakness.remains<1
@@ -866,11 +865,10 @@ local function runRotation()
         end
         -- # CP requirement: Dance at low CP by default.
         -- actions.stealth_cds+=/variable,name=shd_combo_points,value=combo_points.deficit>=4
-        local shdComboPoints 
-        if comboDeficit >= 4 then shdComboPoints = 1 else shdComboPoints = 0 end
         -- # CP requirement: Dance only before finishers if we have priority rotation.
         -- actions.stealth_cds+=/variable,name=shd_combo_points,value=combo_points.deficit<=1,if=variable.use_priority_rotation
-        if comboDeficit <= 1 and priorityRotation then shdComboPoints = 1 else shdComboPoints = 0 end
+        local shdComboPoints 
+        if comboDeficit >= 4 or (comboDeficit <= 1 and priorityRotation) then shdComboPoints = 1 else shdComboPoints = 0 end
         -- # Dance during Symbols or above threshold.
         -- actions.stealth_cds+=/shadow_dance,if=variable.shd_combo_points&(variable.shd_threshold|buff.symbols_of_death.remains>=1.2|spell_targets.shuriken_storm>=4&cooldown.symbols_of_death.remains>10)
         if mode.sd == 1 and ttd("target") > 3 and (cdUsage or (isChecked("Save SD Charges for CDs") and charges.shadowDance.frac() >= (getOptionValue("Save SD Charges for CDs") + 1)) or not isChecked("Save SD Charges for CDs")) 
@@ -879,7 +877,7 @@ local function runRotation()
         end
         -- Burn remaining Dances before the fight ends if SoD won't be ready in time.
         -- actions.stealth_cds+=/shadow_dance,if=variable.shd_combo_points&fight_remains<cooldown.symbols_of_death.remains
-        if mode.sd == 1 and cdUsage and shdComboPoints and fightRemain < cd.symbolsOfDeath.remain() then
+        if mode.sd == 1 and cdUsage and shdComboPoints and ttd("target") < cd.symbolsOfDeath.remain() then
             if cast.shadowDance("player") then return true end
         end
     end
@@ -897,16 +895,14 @@ local function runRotation()
         -- # Finish at 4+ CP without DS, 5+ with DS, and 6 with DS after Vanish
         -- actions.stealthed+=/call_action_list,name=finish,if=combo_points.deficit<=1-(talent.deeper_stratagem.enabled&buff.vanish.up)
         local finishThd = 0
-        if dSEnabled and ((buff.vanish.exists() or cast.last.vanish(1)) then
-            finishThd = 1
-        end
-        if (TornadoActive and buff comboDeficit <= 2) or (enemies10 = 4 and comboPoints >= 4) or (comboDeficit <= (1 - finishThd)) then
+        if dSEnabled and (buff.vanish.exists() or cast.last.vanish(1)) then finishThd = 1 else finishThd = 0 end
+        if (buff.shurikenTornado.exists() and comboDeficit <= 2) or (enemies10 == 4 and combo >= 4) or (comboDeficit <= (1 - finishThd)) then
             if actionList_Finishers() then return true end
         end
         -- # Up to 3 targets keep up Find Weakness by cycling Shadowstrike.
         -- cycle_targets=1,if=debuff.find_weakness.remains<1&spell_targets.shuriken_storm<=3&target.time_to_die-remains>6
         -- actions.stealthed+=/shadowstrike,cycle_targets=1,if=debuff.find_weakness.remains<1&spell_targets.shuriken_storm<=3&target.time_to_die-remains>6
-        if enemies10 <= 3 and talent.findWeakness then
+        if enemies10 <= 3 then
             for i = 1, #enemyTable5 do
                 local thisUnit = enemyTable5[i].unit
                 if debuff.findWeakness.remain(thisUnit) < 1 and ttd(thisUnit) > 6 then
@@ -925,9 +921,9 @@ local function runRotation()
             if cast.shadowstrike("target") then return true end
         end
         -- actions.stealthed+=/shuriken_storm,if=spell_targets>=3+(buff.premeditation.up|buff.the_rotten.up|runeforge.akaaris_soul_fragment.equipped&conduit.deeper_daggers.rank>=7)
-        local sStorm = 0
-        if buff.premeditation.exists() or buff.theRotten.exists() or runeforge.akaarisSoulFragment.active and conduit.deeperDaggers.rank >= 7 then sStorm = 1 else sStorm = 0 end 
-        if enemies10 >= 3 + sStorm then
+        local stealthedsStorm = 0
+        if buff.premeditation.exists() then stealthedsStorm = 1 else stealthedsStorm = 0 end -- or buff.theRotten.exists() or runeforge.akaarisSoulFragment.active and conduit.deeperDaggers.rank >= 7
+        if enemies10 >= 3 + stealthedsStorm then
             if cast.shurikenStorm("player") then return true end
         end
         -- # Shadowstrike to refresh Find Weakness and to ensure we can carry over a full FW into the next SoD if possible.
@@ -935,14 +931,19 @@ local function runRotation()
         if debuff.findWeakness.remain("target") <= 1 or cd.symbolsOfDeath.remain() < 1 and debuff.findWeakness.remain("target") < cd.symbolsOfDeath.remain() then
             if cast.shadowstrike("target") then return true end
         end
-        -- actions.stealthed+=/gloomblade,if=!runeforge.akaaris_soul_fragment.equipped&buff.perforated_veins.stack>=3&conduit.perforated_veins.rank>=13-(9*conduit.deeper_dagger.enabled+conduit.deeper_dagger.rank)
-        if not runeforge.akaarisSoulFragment.active() and buff.perforatedVeins.stack() >= 3 and conduit.perforatedVeins.rank >= 13 - (9 * conduit.deeperDaggers + conduit.deeperDaggers.rank) then
-            if cast.gloomblade("target") then return true end
+        -- gloomblade
+        if cast.able.gloomblade() and talent.gloomblade then
+            if cast.gloomblade("target") then return end
         end
-        -- actions.stealthed+=/gloomblade,if=runeforge.akaaris_soul_fragment.equipped&buff.perforated_veins.stack>=3&(conduit.perforated_veins.rank+conduit.deeper_dagger.rank)>=16
-        if runeforge.akaarisSoulFragment.active() and buff.perforatedVeins.stack() >= 3 and (conduit.perforatedVeins.rank + conduit.deeperDaggers.rank) >= 16 then
-            if cast.gloomblade("target") then return true end
-        end
+---------------------------- SHADOWLANDS
+        -- -- actions.stealthed+=/gloomblade,if=!runeforge.akaaris_soul_fragment.equipped&buff.perforated_veins.stack>=3&conduit.perforated_veins.rank>=13-(9*conduit.deeper_dagger.enabled+conduit.deeper_dagger.rank)
+        -- if not runeforge.akaarisSoulFragment.active() and buff.perforatedVeins.stack() >= 3 and conduit.perforatedVeins.rank >= 13 - (9 * conduit.deeperDaggers + conduit.deeperDaggers.rank) then
+        --     if cast.gloomblade("target") then return true end
+        -- end
+        -- -- actions.stealthed+=/gloomblade,if=runeforge.akaaris_soul_fragment.equipped&buff.perforated_veins.stack>=3&(conduit.perforated_veins.rank+conduit.deeper_dagger.rank)>=16
+        -- if runeforge.akaarisSoulFragment.active() and buff.perforatedVeins.stack() >= 3 and (conduit.perforatedVeins.rank + conduit.deeperDaggers.rank) >= 16 then
+        --     if cast.gloomblade("target") then return true end
+        -- end
         -- -- # Use Gloomblade over Shadowstrike and Storm with 2+ Perforate at 2 or less targets.
         -- -- actions.stealthed+=/gloomblade,if=azerite.perforate.rank>=2&spell_targets.shuriken_storm<=2&position_back
         -- if trait.perforate.rank >= 2 and enemies10 <= 2 then
@@ -953,6 +954,7 @@ local function runRotation()
         --         end
         --     end
         -- end
+---------------------------- SHADOWLANDS
         -- actions.stealthed+=/shadowstrike
         if targetDistance < 5 then
             if cast.shadowstrike("target") then return true end
@@ -962,7 +964,9 @@ local function runRotation()
     --Builders
     local function actionList_Builders()
         -- actions.build=shuriken_storm,if=spell_targets>=2+(talent.gloomblade.enabled&azerite.perforate.rank>=2&position_back)
-        if enemies10 >= 2 + (gloombladeActive and trait.perforate.rank >= 2) then
+        local buildersStorm = 0
+        if talent.gloomblade and trait.perforate.rank >= 2 then buildersStorm = 1 else buildersStorm = 0 end
+        if enemies10 >= 2 + buildersStorm then
             for i = 1, #enemyTable10 do
                 thisUnit = enemyTable10[i].unit
                 if not getFacing(thisUnit,"player") then
@@ -975,15 +979,21 @@ local function runRotation()
         --     if cast.serratedBoneSpike(enemyTable30.lowestTTDUnit) then return true end
         -- end
         -- actions.build+=/gloomblade
-        if cast.gloomblade("target") then return true end
+        if talent.gloomblade then
+            if cast.gloomblade("target") then return true end
+        end
+        -- Sinister Strike
+        if level < 14 then
+            if cast.sinisterStrike("target") then return true end
+        end
         -- actions.build+=/backstab
-        if cast.backstab("target") then return true end
+        if cast.backstab("target") then return end
     end
 -----------------
 --- Rotations ---
 -----------------
     -- Pause
-    if IsMounted() or IsFlying() or pause() or mode.rotation==4 then
+    if IsMounted() or IsFlying() or pause() or mode.rotation==3 then
         return true
     else
 ---------------------------------
@@ -998,19 +1008,19 @@ local function runRotation()
 -----------------------------
 --- In Combat - Rotations --- 
 -----------------------------
-        if (inCombat or (not isChecked("Disable Auto Combat") and (cast.last.vanish(1) or (validTarget and targetDistance < 5)))) and opener == true then
+        if (inCombat or (not isChecked("Disable Auto Combat") and (cast.last.vanish(1) or (targetDistance < 5)))) and opener == true then --validTarget and
             if cast.last.vanish(1) then StopAttack() end
             if actionList_Defensive() then return true end
             if actionList_Interrupts() then return true end
             --pre mfd
-            if stealth and comboDeficit > 2 and talent.markedForDeath and validTarget and targetDistance < 10 then
+            if stealth and comboDeficit > 2 and talent.markedForDeath and targetDistance < 10 then --  and validTarget
                 if cast.markedForDeath("target") then
                     combo = comboMax
                     comboDeficit = 0
                 end
             end
             --tricks
-            if tricksUnit ~= nil and validTarget and targetDistance < 5 then
+            if tricksUnit ~= nil and targetDistance < 5 then --and validTarget 
                 cast.tricksOfTheTrade(tricksUnit)
             end
             -- # Restealth if possible (no vulnerable enemies in combat)
@@ -1019,17 +1029,17 @@ local function runRotation()
                 cast.stealth("player")
             end
             --start aa
-            if validTarget and not stealthedRogue and targetDistance < 5 and not IsCurrentSpell(6603) then
+            if not stealthedRogue and targetDistance < 5 and not IsCurrentSpell(6603) then --validTarget and
                 StartAttack("target")
             end
             --
-            if validTarget and ttd("target") > getOptionValue("CDs TTD Limit") and targetDistance < 5 then
+            if ttd("target") > getOptionValue("CDs TTD Limit") and targetDistance < 5 then --validTarget and 
                 if actionList_CooldownsOGCD() then return true end
             end
             if gcd < getLatency() then
                 -- # Check CDs at first
                 -- actions+=/call_action_list,name=cds
-                if validTarget and targetDistance < 5 then
+                if targetDistance < 5 then --validTarget and
                     if actionList_Cooldowns() then return true end
                 end
                 -- # Run fully switches to the Stealthed Rotation (by doing so, it forces pooling if nothing is available).
@@ -1039,7 +1049,11 @@ local function runRotation()
                 end
                 -- # Apply Slice and Dice at 2+ CP during the first 10 seconds, after that 4+ CP if it expires within the next GCD or is not up
                 -- actions+=/slice_and_dice, if=spell_targets.shuriken_storm<6&fight_remains>6&buff.slice_and_dice.remains<gcd.max&combo_points>=4-(time<10)*2
-                if enemies10 < 6 and fightRemain > 6 and buff.sliceAndDice.remain() < gcdMax and comboPoints >= 4-(cTime*2) then
+                local cTime = 0
+                if combatTime < 10 then 
+                    cTime = 1
+                end
+                if enemies10 < 6 and ttd("target") > 6 and buff.sliceAndDice.remain() < gcdMax and combo >= 4-(cTime*2) then
                     if cast.sliceAndDice("player") then return true end
                 end
                 -- # Priority Rotation? Let's give a crap about energy for the stealth CDs (builder still respect it). Yup, it can be that simple.
@@ -1047,31 +1061,31 @@ local function runRotation()
                 if priorityRotation and validTarget and not stealthedAll and targetDistance < 5 then
                     if actionList_StealthCD() then return true end
                 end
-                -- # Used to define when to use stealth CDs or builders
+                    -- # Used to define when to use stealth CDs or builders
                 -- actions+=/variable,name=stealth_threshold,value=25+talent.vigor.enabled*20+talent.master_of_shadows.enabled*20+talent.shadow_focus.enabled*25+talent.alacrity.enabled*20+25*(spell_targets.shuriken_storm>=4)
-                local stealthThd = 25 + vEnabled * 20 + mosEnabled * 20 + sfEnabled * 25 + aEnabled * 20 + 15 * ssThd
+                local stealthThd = 25 + vEnabled * 20 + mosEnabled * 20 + sfEnabled * 25 + aEnabled * 20 + 25 * ssThd
                 -- # Consider using a Stealth CD when reaching the energy threshold
                 -- actions+=/call_action_list,name=stealth_cds,if=energy.deficit<=variable.stealth_threshold
-                if energyDeficit <= stealthThd and validTarget and not stealthedAll and targetDistance < 5 then
+                if energyDeficit <= stealthThd and not stealthedAll and targetDistance < 5 then --and validTarget 
                     if actionList_StealthCD() then return true end
                 end
-----------------------------                
+---------------------------- SHADOWLANDS               
                 -- actions+=/call_action_list,name=finish,if=runeforge.deathly_shadows.equipped&dot.sepsis.ticking&dot.sepsis.remains<=2&combo_points>=2
                 -- if runeforge.deadlyShadows.active and debuff.sepsis.exists("target") and debuff.sepsis.remain("target") <= 2 and combo >= 2 then
                 --     if actionList_Finishers() then return true end
                 -- end
                 -- actions+=/call_action_list,name=finish,if=cooldown.symbols_of_death.remains<=2&combo_points>=2&runeforge.the_rotten.equipped
-                if cd.symbolsOfDeath.remain() <= 2 and combo >= 2 and runeforge.theRotten.active then
-                    if actionList_Finishers() then return true end
-                end
+                -- if cd.symbolsOfDeath.remain() <= 2 and combo >= 2 and runeforge.theRotten.active then
+                --     if actionList_Finishers() then return true end
+                -- end
                 -- actions+=/call_action_list,name=finish,if=combo_points=animacharged_cp
                 -- if combo == animachargedCP then
                 --     if actionList_Finishers() then return true end
                 -- end
------------------------------
+---------------------------- SHADOWLANDS
                 -- # Finish at 4+ without DS, 5+ with DS (outside stealth)
                 -- actions+=/call_action_list,name=finish,if=combo_points.deficit<=1|fight_remains<=1&combo_points>=3
-                if comboDeficit <= 1 or (fightRemain <= 1 and combo >= 3) then
+                if comboDeficit <= 1 or (ttd("target") <= 1 and combo >= 3) then
                     if actionList_Finishers() then return true end
                 end
                 -- # With DS also finish at 4+ against exactly 4 targets (outside stealth)
