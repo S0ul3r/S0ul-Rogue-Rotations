@@ -1,8 +1,8 @@
 # S0ul-Rogue-Rotations
-World of Warcraft rotation for Assassination Rogue for BadRotations
 
-Subelty rota for Shadowlands
-Assa BfA
+World of Warcraft rotations for: 
+  - Assassination Rogue 9.0.5
+  - Subtlety Rogue 9.0.5
 
-Rotations work with core from BadRotations, available here:
+Rotations work with core of BadRotations, available here:
 https://github.com/CuteOne/BadRotations
