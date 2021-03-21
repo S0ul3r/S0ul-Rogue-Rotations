@@ -5,7 +5,6 @@ World of Warcraft rotations for:
    Rotation  | support | patch | status |     raidable?
 :----------- | :-----: | :---: | -----: | :----------------:
 Assassination|  Full   | 9.0.5 |  100%  | :white_check_mark:
-:----------- | :-----: | :---: | -----: | :----------------:
   Subtlety   |  Full   | 9.0.5 |  100%  | :white_check_mark:
 
 Rotations work with core of BadRotations, available here:
